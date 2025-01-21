@@ -43,7 +43,14 @@
 */
 uint64_t Tools::buildLong(uint8_t bytes[LONGSIZE])
 {
-  return 0;
+  uint64_t returned = 0;
+  for (int i = 0; i < LONGSIZE; i++)
+  {
+    uint64_t a = bytes[i];
+    a = a << (8*i);
+    returned += a;
+  }
+  return returned;
 }
 
 /** 
@@ -67,7 +74,13 @@ uint64_t Tools::buildLong(uint8_t bytes[LONGSIZE])
 */
 uint64_t Tools::getByte(uint64_t source, int32_t byteNum)
 {
-  return 0;
+  if (byteNum < 0 || byteNum > 7)
+  {
+    return 0;
+  }
+  uint64_t mask = 0xFF;
+  mask = mask << byteNum  * 8;
+  return source & mask;
 }
 
 /**
