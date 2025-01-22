@@ -35,6 +35,8 @@ static int getByteTests();
 static int getBitsTests();
 static int setBitsTests();
 static int clearBitsTests();
+static int copyBitsTests();
+static int setByteTests();
 static int signTests();
 static int addOverflowTests();
 static int subOverflowTests();
@@ -59,7 +61,7 @@ static void usage(char * prog);
 */
 int main(int argc, char * argv[])
 {
-   int numFuns = 14;
+   int numFuns = 10;
    int funsPassed = 0;
    std::string check[] = { "\x1B[31m fail \x1B[0m", "\x1B[32m pass \x1B[0m"};
 
@@ -86,6 +88,16 @@ int main(int argc, char * argv[])
    std::cout << "clearBits tests:" << check[pass] << "\n";
    funsPassed += pass;
 
+
+   pass = copyBitsTests();
+   std::cout << "copyBits tests:" << check[pass] << "\n";
+   funsPassed += pass;
+
+
+   pass = setByteTests();
+   std::cout << "setByte tests:" << check[pass] << "\n";
+   funsPassed += pass;
+
    pass = signTests();
    std::cout << "sign tests:" << check[pass] << "\n";
    funsPassed += pass;
@@ -98,8 +110,17 @@ int main(int argc, char * argv[])
    std::cout << "subOverflow tests:" << check[pass] << "\n";
    funsPassed += pass;
 
-   std::cout << "\n" << std::dec << funsPassed << " functions out of a total of " << numFuns
+   if (funsPassed < numFuns)
+   {
+      std::cout << "\n" << std::dec << funsPassed << " functions out of a total of " << numFuns
              << " passed their tests\n";
+   }
+   
+             else
+             {
+               std::cout << "\n" << std::dec << "Congratulations.  All tests have passed.\n";
+               
+             }
 }
 
 /**
@@ -346,6 +367,24 @@ int clearBitsTests()
    pass &= myAssert(Tools::clearBits(0x1122334455667788, 0x30, 0x3f), 0x0000334455667788);
    pass &= myAssert(Tools::clearBits(0x1122334455667788, 0x40, 0x3f), 0x1122334455667788);
    pass &= myAssert(Tools::clearBits(0x1122334455667788, 0x30, 0x40), 0x1122334455667788);
+   return pass;
+}
+
+int copyBitsTests()
+{
+   int pass;
+   pass = myAssert(Tools::copyBits(0x1122334455667788, 0x8877665544332211, 0, 0, 8), 0x8877665544332288);
+   pass &= myAssert(Tools::copyBits(0x1122334455667788, 0x8877665544332211, 0, 8, 8), 0x8877665544338811);
+   return pass;
+}
+
+int setByteTests()
+{
+   int pass;
+   pass = myAssert(Tools::setByte(0x1122334455667788, 0), 0x11223344556677ff);
+   pass &= myAssert(Tools::setByte(0x1122334455667788, 1), 0x112233445566ff88);
+   pass &= myAssert(Tools::setByte(0x1122334455667788, 8), 0x1122334455667788);
+
    return pass;
 }
 

@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <string>
 #include "Tools.h"
+#include <inttypes.h>
 
 /*
  * Hints/Notes:
@@ -80,7 +81,9 @@ uint64_t Tools::getByte(uint64_t source, int32_t byteNum)
   }
   uint64_t mask = 0xFF;
   mask = mask << byteNum  * 8;
-  return source & mask;
+  uint64_t byte = source & mask;
+  byte = byte >> byteNum * 8;
+  return byte;
 }
 
 /**
@@ -110,7 +113,20 @@ uint64_t Tools::getByte(uint64_t source, int32_t byteNum)
  */
 uint64_t Tools::getBits(uint64_t source, int32_t low, int32_t high)
 {
-  return 0;
+  if (low < 0 || high > 63)
+  {
+    return 0;
+  }
+  uint64_t mask1 = ~0;
+  uint64_t mask2 = ~0;
+  mask1 = mask1 >> (63-high);
+  mask2 = mask2 << low;
+  uint64_t newsource = source & mask1 & mask2;
+  newsource = newsource >> low;
+  
+  return newsource;
+  
+
 }
 
 
@@ -138,7 +154,19 @@ uint64_t Tools::getBits(uint64_t source, int32_t low, int32_t high)
  */
 uint64_t Tools::setBits(uint64_t source, int32_t low, int32_t high)
 {
-  return 0;
+  if (low < 0 || high > 63)
+  {
+    return source;
+  }
+  
+  uint64_t mask1 = ~0;
+  uint64_t mask2 = ~0;
+  mask1 = mask1 >> (63-high);
+  mask2 = mask2 << low;
+  uint64_t mask3 = mask1 & mask2;
+
+  
+  return source | mask3;
 }
 
 /**
@@ -163,7 +191,16 @@ uint64_t Tools::setBits(uint64_t source, int32_t low, int32_t high)
  */
 uint64_t Tools::clearBits(uint64_t source, int32_t low, int32_t high)
 {
-  return 0;
+  if (low < 0 || high > 63)
+  {
+    return source;
+  }
+    uint64_t mask = 1;
+    mask = ((mask << (high - low + 1)) - 1);
+    mask = mask << low;
+    return source & ~mask;
+
+
 }
 
 
@@ -194,8 +231,26 @@ uint64_t Tools::clearBits(uint64_t source, int32_t low, int32_t high)
 uint64_t Tools::copyBits(uint64_t source, uint64_t dest, 
                          int32_t srclow, int32_t dstlow, int32_t length)
 {
-   return 0; 
+ 
+    if (srclow < 0 || srclow + length > 64 || dstlow < 0 || dstlow + length > 64)
+    {
+        return dest;  
+    }
+    
+    uint64_t mask = ~0;
+    mask = mask << 64 - length;
+    mask = mask >> 64 - length;
+    
+    uint64_t sourceBits = (source >> srclow) & mask;
+    
+    uint64_t clearMask = ~(mask << dstlow);
+    dest = dest & clearMask;
+    dest = dest | (sourceBits << dstlow);
+    
+    return dest;
 }
+
+
 
 
 /**
@@ -219,7 +274,12 @@ uint64_t Tools::copyBits(uint64_t source, uint64_t dest,
  */
 uint64_t Tools::setByte(uint64_t source, int32_t byteNum)
 {
-  return 0;
+  //printf("source = %llx\n", source);
+  int64_t mask = 0xFF;
+  mask = mask * (!(byteNum < 0 || byteNum > 7));
+  mask = mask << byteNum * 8;
+  //printf("masked = %llx\n", mask | source);
+  return (mask | source) ;
 }
 
 
@@ -241,7 +301,7 @@ uint64_t Tools::setByte(uint64_t source, int32_t byteNum)
  */
 uint64_t Tools::sign(uint64_t source)
 {
-  return 0;
+  return source >> 63;
 }
 
 /**
@@ -264,13 +324,30 @@ uint64_t Tools::sign(uint64_t source)
  * 3) no more than 10 lines of code
  */
 bool Tools::addOverflow(uint64_t op1, uint64_t op2)
+
+
 {
+ // printf("op1 = %llx\n", op1);
+  // printf("op2 = %llx\n", op2);
+  // uint64_t zero = 0;
+  
   //Hint: If an overflow occurs then it overflows by just one bit.
   //      In other words, 65 bits would be needed to store the arithmetic 
   //      result instead of 64 and the sign bit in the stored result (bit 63) is incorrect. 
   //      Thus, the way to check for an overflow is to compare the signs of the
   //      operand and the result.  For example, if you add two positive numbers, 
   //      the result should be positive, otherwise an overflow occurred.
+  if (sign(op1) && sign(op2))
+  {
+    //printf("result block 1 = %d\n", !(sign(op1 + op2)));
+    return !(sign(op1 + op2));
+  }
+  else if (!sign(op1) && !sign(op2))
+  {
+    //printf("result block 2 = %d\n", (sign(op1 + op2)));
+return (sign(op1 + op2));
+  }
+ // printf("result block 3 = %d\n", 0);
   return false;
 }
 
@@ -300,5 +377,18 @@ bool Tools::subOverflow(uint64_t op1, uint64_t op2)
   //Note: you can not simply use addOverflow in this function.  If you negate
   //op1 in order to an add, you may get an overflow. 
   //NOTE: the subtraction is op2 - op1 (not op1 - op2).
+  // printf("op1 = %llx\n", op1);
+  //printf("op2 = %llx\n", op2);
+   if (!sign(op1) && sign(op2))
+  {
+    //printf("result block 1 = %d\n", !(sign(op2 - op1)));
+    return !(sign(op2 - op1));
+  }
+  else if (sign(op1) && !sign(op2))
+  {
+   // printf("result block 2 = %d\n", (sign(op2 - op1)));
+return (sign(op2 - op1));
+  }
+ // printf("result block 3 = %d\n", 0);
   return false;
 }
